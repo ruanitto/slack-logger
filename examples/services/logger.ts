@@ -40,24 +40,24 @@ slackLogger.addMessageHandler(
 slackLogger.addMessageHandler({
   getName: () => "test",
   getDescription: () => "triggers some log messages for testing changing log level",
-  handleMessage: async (_message, _logger) => {
-    const log = logger.get("test", __filename);
+  // handleMessage: async (_message, _logger) => {
+  //   const log = logger.get("test", __filename);
 
-    log.info("info message");
-    log.warn("warn message");
-    log.error("error message");
-  },
+  //   log.info("info message");
+  //   log.warn("warn message");
+  //   log.error("error message");
+  // },
 });
 
 // example of adding a custom message handler
 slackLogger.addMessageHandler({
   getName: () => "restart",
   getDescription: () => "restarts the application",
-  handleMessage: async (_message, log) => {
-    log.post("restarting the application..");
+  // handleMessage: async (_message, log) => {
+  //   log.post("restarting the application..");
 
-    // restart();
-  },
+  //   // restart();
+  // },
 });
 
 // export the logger instance

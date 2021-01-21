@@ -25,42 +25,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -71,13 +35,6 @@ var __rest = (this && this.__rest) || function (s, e) {
                 t[p[i]] = s[p[i]];
         }
     return t;
-};
-var __spreadArrays = (this && this.__spreadArrays) || function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
 };
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
@@ -94,7 +51,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var yaml = __importStar(require("js-yaml"));
 var moment_1 = __importDefault(require("moment"));
 var path = __importStar(require("path"));
-var slackbots_1 = __importDefault(require("slackbots"));
+var web_api_1 = require("@slack/web-api");
 var stream_1 = require("stream");
 var HelpMessageHandler_1 = __importDefault(require("./handlers/HelpMessageHandler"));
 // export public resources
@@ -141,6 +98,7 @@ exports.levelColorMap = (_a = {},
 // tslint:disable-next-line:max-classes-per-file
 var SlackLogger = /** @class */ (function (_super) {
     __extends(SlackLogger, _super);
+    // private channels: SlackBotChannel[] | undefined;
     function SlackLogger(options) {
         var _this = _super.call(this, {
             objectMode: true,
@@ -149,7 +107,7 @@ var SlackLogger = /** @class */ (function (_super) {
         _this.isOpen = false;
         _this.messageHandlers = [];
         // build options
-        _this.options = __assign({ version: "", token: "", name: "Slack Logger", channel: "general", iconUrl: "https://image.ibb.co/iOSThT/log_local.png", basePath: path.join(__dirname, "..", ".."), levelIconUrlMap: {
+        _this.options = __assign({ version: "", name: "Slack Logger", channel: "general", iconUrl: "https://image.ibb.co/iOSThT/log_local.png", basePath: path.join(__dirname, "..", ".."), levelIconUrlMap: {
                 TRACE: "https://image.ibb.co/bx33bd/log_trace.png",
                 DEBUG: "https://image.ibb.co/i64n2J/log_debug.png",
                 INFO: "https://image.ibb.co/muqycJ/log_info.png",
@@ -164,41 +122,30 @@ var SlackLogger = /** @class */ (function (_super) {
             return _this;
         }
         // create slack-bot
-        _this.bot = new slackbots_1.default(_this.options);
+        _this.bot = new web_api_1.WebClient(_this.options.token);
         // listen for open event
-        _this.bot.on("open", function () { return __awaiter(_this, void 0, void 0, function () {
-            var channels, groups;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.isOpen = true;
-                        // give up if bot is not available
-                        if (!this.bot) {
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, this.bot.getChannels()];
-                    case 1:
-                        channels = (_a.sent()).channels;
-                        return [4 /*yield*/, this.bot.getGroups()];
-                    case 2:
-                        groups = (_a.sent()).groups;
-                        // save list of channels including groups
-                        this.channels = __spreadArrays(channels, groups);
-                        return [2 /*return*/];
-                }
-            });
-        }); });
+        // this.bot.on('open', async () => {
+        _this.isOpen = true;
+        // give up if bot is not available
+        if (!_this.bot) {
+            return _this;
+        }
+        // fetch list of channels and groups
+        // const { channels } = await this.bot.getChannels();
+        // const { groups } = await this.bot.getGroups();
+        // this.bot.channels.list().then()
+        // save list of channels including groups
+        // this.channels = [...channels, ...groups];
+        // });
         // listen for close event
-        _this.bot.on("close", function () {
-            _this.isOpen = false;
-        });
+        // this.bot.on("close", () => {
+        //   this.isOpen = false;
+        // });
         // register built-in message handlers
         _this.addMessageHandler(new HelpMessageHandler_1.default());
-        // listen for incoming messages
-        _this.bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-            return [2 /*return*/, this.onMessage(message)];
-        }); }); });
         return _this;
+        // listen for incoming messages
+        // this.bot.on("message", async (message) => this.onMessage(message));
     }
     Object.defineProperty(SlackLogger.prototype, "isConnected", {
         get: function () {
@@ -216,18 +163,18 @@ var SlackLogger = /** @class */ (function (_super) {
     SlackLogger.prototype.getMessageHandlers = function () {
         return this.messageHandlers;
     };
-    SlackLogger.prototype.getChannelById = function (id) {
-        if (!this.channels) {
-            return undefined;
-        }
-        return this.channels.find(function (channel) { return channel.id === id; });
-    };
-    SlackLogger.prototype.getChannelByName = function (name) {
-        if (!this.channels) {
-            return undefined;
-        }
-        return this.channels.find(function (channel) { return channel.name === name; });
-    };
+    // public getChannelById(id: string): SlackBotChannel | undefined {
+    //   if (!this.channels) {
+    //     return undefined;
+    //   }
+    //   return this.channels.find((channel) => channel.id === id);
+    // }
+    // public getChannelByName(name: string): SlackBotChannel | undefined {
+    //   if (!this.channels) {
+    //     return undefined;
+    //   }
+    //   return this.channels.find((channel) => channel.name === name);
+    // }
     SlackLogger.prototype.sendMessage = function (userInfo) {
         // just ignore messages if no bot was created
         if (!this.bot) {
@@ -276,6 +223,8 @@ var SlackLogger = /** @class */ (function (_super) {
         }
         // post the message
         this.post("", {
+            channel: this.options.channel,
+            text: info.text,
             attachments: [
                 {
                     fallback: info.text,
@@ -283,8 +232,8 @@ var SlackLogger = /** @class */ (function (_super) {
                     author_name: info.component ? info.component : undefined,
                     title: info.text,
                     text: text,
-                    image_url: "http://my-website.com/path/to/image.jpg",
-                    thumb_url: "http://example.com/path/to/thumb.png",
+                    // image_url: "http://my-website.com/path/to/image.jpg",
+                    // thumb_url: "http://example.com/path/to/thumb.png",
                     footer: footer,
                     footer_icon: messageIconUrl,
                 },
@@ -341,55 +290,46 @@ var SlackLogger = /** @class */ (function (_super) {
         return true;
     };
     SlackLogger.prototype.post = function (message, options) {
-        if (options === void 0) { options = {}; }
+        if (options === void 0) { options = { channel: this.options.channel, text: '' }; }
         // just ignore post requests if no bot was created
         if (!this.bot) {
             return;
         }
         // attempt to post the message
         try {
-            this.bot.postTo(this.options.channel, message, __assign({ username: this.options.name, icon_url: this.options.iconUrl }, options));
+            this.bot.chat.postMessage(__assign({ username: this.options.name, icon_url: this.options.iconUrl }, options));
         }
         catch (error) {
             console.warn("posting \"" + message + "\" to slack failed (" + error.message + ")");
         }
     };
-    SlackLogger.prototype.onMessage = function (message) {
-        return __awaiter(this, void 0, void 0, function () {
-            var channel, tokens, name, messageHandler;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        // only handle normal messages
-                        if (message.type !== "message" || typeof message.text !== "string") {
-                            return [2 /*return*/];
-                        }
-                        channel = this.getChannelById(message.channel);
-                        // ignore message if no such channel was found
-                        if (!channel) {
-                            return [2 /*return*/];
-                        }
-                        // ignore messages from wrong channels
-                        if (channel.name !== this.options.channel) {
-                            return [2 /*return*/];
-                        }
-                        tokens = message.text.split(" ");
-                        name = tokens[0];
-                        messageHandler = this.getMessageHandlerByName(name);
-                        // ignore unsupported messages
-                        if (!messageHandler) {
-                            return [2 /*return*/];
-                        }
-                        // handle supported messages
-                        return [4 /*yield*/, messageHandler.handleMessage(message, this)];
-                    case 1:
-                        // handle supported messages
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
+    // public async onMessage(message: SlackBotMessage) {
+    //   // only handle normal messages
+    //   if (message.type !== "message" || typeof message.text !== "string") {
+    //     return;
+    //   }
+    //   // attempt to get channel info by name
+    //   const channel = this.getChannelById(message.channel);
+    //   // ignore message if no such channel was found
+    //   if (!channel) {
+    //     return;
+    //   }
+    //   // ignore messages from wrong channels
+    //   if (channel.name !== this.options.channel) {
+    //     return;
+    //   }
+    //   // split the message into tokens and use the first word as the name of the command
+    //   const tokens = message.text.split(" ");
+    //   const name = tokens[0];
+    //   // attempt to find the message handler
+    //   const messageHandler = this.getMessageHandlerByName(name);
+    //   // ignore unsupported messages
+    //   if (!messageHandler) {
+    //     return;
+    //   }
+    //   // handle supported messages
+    //   await messageHandler.handleMessage(message, this);
+    // }
     SlackLogger.prototype.formatSource = function (basePath, source) {
         return path.relative(basePath, source).replace(/\\/g, "/");
     };

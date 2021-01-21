@@ -1,6 +1,6 @@
 {
-  "name": "slack-logger",
-  "version": "2.1.3",
+  "name": "@ruanitto/slack-logger",
+  "version": "0.0.1",
   "description": "Bunyan-compatible logger that send pretty formatted messages to a Slack channel.",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/stagnationlab/slack-logger.git"
+    "url": "https://github.com/ruanitto/slack-logger.git"
   },
   "keywords": [
     "slack",
@@ -34,10 +34,11 @@
   "author": "Priit Kallas <kallaspriit@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/stagnationlab/slack-logger/issues"
+    "url": "https://github.com/ruanitto/slack-logger/issues"
   },
-  "homepage": "https://github.com/stagnationlab/slack-logger#readme",
+  "homepage": "https://github.com/ruanitto/slack-logger#readme",
   "dependencies": {
+    "@slack/web-api": "^6.0.0",
     "@types/ansi-styles": "^3.2.1",
     "@types/bunyan": "^1.8.6",
     "@types/js-yaml": "^3.12.3",
@@ -46,7 +47,6 @@
     "bunyan": "^1.8.12",
     "js-yaml": "^3.13.1",
     "moment": "^2.24.0",
-    "slackbots": "^1.2.0",
     "strip-ansi": "^6.0.0"
   },
   "devDependencies": {

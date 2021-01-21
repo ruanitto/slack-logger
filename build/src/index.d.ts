@@ -1,6 +1,6 @@
 /// <reference path="../../src/@types/slackbots/index.d.ts" />
 /// <reference types="node" />
-import { PostMessageParams, SlackBotChannel, SlackBotMessage, SlackBotNormalMessage, SlackBotOptions } from "slackbots";
+import { ChatPostMessageArguments } from '@slack/web-api';
 import { Transform } from "stream";
 export { default as Logger } from "./Logger";
 export { default as HelpMessageHandler } from "./handlers/HelpMessageHandler";
@@ -44,12 +44,15 @@ export interface MessageSource {
     file: string;
     line: number | undefined;
 }
-export interface SlackLogOptions extends SlackBotOptions {
+export interface SlackLogOptions {
     version?: string;
     channel?: string;
     iconUrl?: string;
     basePath?: string;
     levelIconUrlMap?: LevelIconUrlMap;
+    name?: string;
+    as_user?: Boolean;
+    token: string;
 }
 export interface StreamLogMessage {
     name?: string;
@@ -84,7 +87,6 @@ export declare const levelColorMap: LevelColorMap;
 export interface MessageHandler {
     getName(): string;
     getDescription(): string;
-    handleMessage(message: SlackBotNormalMessage, logger: SlackLogger): Promise<void>;
 }
 export default class SlackLogger extends Transform {
     readonly isEnabled: boolean;
@@ -93,14 +95,11 @@ export default class SlackLogger extends Transform {
     private readonly options;
     private readonly bot;
     private readonly messageHandlers;
-    private channels;
     constructor(options: SlackLogOptions);
     get isConnected(): boolean;
     addMessageHandler(messageHandler: MessageHandler): void;
     getMessageHandlerByName(name: string): MessageHandler | undefined;
     getMessageHandlers(): MessageHandler[];
-    getChannelById(id: string): SlackBotChannel | undefined;
-    getChannelByName(name: string): SlackBotChannel | undefined;
     sendMessage(userInfo: MessageInfo): void;
     /**
      * This stream method is called by Bunyan.
@@ -109,8 +108,7 @@ export default class SlackLogger extends Transform {
      */
     write(data: {}): boolean;
     end(): boolean;
-    post(message: string, options?: PostMessageParams): void;
-    onMessage(message: SlackBotMessage): Promise<void>;
+    post(message: string, options?: ChatPostMessageArguments): void;
     protected formatSource(basePath: string, source: string): string;
     protected getDateTime(): string;
 }

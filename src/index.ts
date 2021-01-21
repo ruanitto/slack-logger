@@ -4,13 +4,7 @@
 import * as yaml from "js-yaml";
 import moment from "moment";
 import * as path from "path";
-import SlackBot, {
-  PostMessageParams,
-  SlackBotChannel,
-  SlackBotMessage,
-  SlackBotNormalMessage,
-  SlackBotOptions,
-} from "slackbots";
+import { ChatPostMessageArguments, WebClient } from '@slack/web-api';
 import { Transform } from "stream";
 import HelpMessageHandler from "./handlers/HelpMessageHandler";
 
@@ -62,12 +56,15 @@ export interface MessageSource {
   line: number | undefined;
 }
 
-export interface SlackLogOptions extends SlackBotOptions {
+export interface SlackLogOptions {
   version?: string;
   channel?: string;
   iconUrl?: string;
   basePath?: string;
   levelIconUrlMap?: LevelIconUrlMap;
+  name?: string;
+  as_user?: Boolean;
+  token: string;
 }
 
 export interface StreamLogMessage {
@@ -121,7 +118,7 @@ export const levelColorMap: LevelColorMap = {
 export interface MessageHandler {
   getName(): string;
   getDescription(): string;
-  handleMessage(message: SlackBotNormalMessage, logger: SlackLogger): Promise<void>;
+  // handleMessage(message: SlackBotNormalMessage, logger: SlackLogger): Promise<void>;
 }
 
 // tslint:disable-next-line:max-classes-per-file
@@ -130,9 +127,9 @@ export default class SlackLogger extends Transform {
   public readonly objectMode = true;
   private isOpen = false;
   private readonly options: Required<SlackLogOptions>;
-  private readonly bot: SlackBot | undefined;
+  private readonly bot: WebClient | undefined;
   private readonly messageHandlers: MessageHandler[] = [];
-  private channels: SlackBotChannel[] | undefined;
+  // private channels: SlackBotChannel[] | undefined;
 
   public constructor(options: SlackLogOptions) {
     super({
@@ -142,7 +139,6 @@ export default class SlackLogger extends Transform {
     // build options
     this.options = {
       version: "",
-      token: "",
       name: "Slack Logger",
       channel: "general",
       iconUrl: "https://image.ibb.co/iOSThT/log_local.png",
@@ -168,35 +164,35 @@ export default class SlackLogger extends Transform {
     }
 
     // create slack-bot
-    this.bot = new SlackBot(this.options);
+    this.bot = new WebClient(this.options.token);
 
     // listen for open event
-    this.bot.on("open", async () => {
-      this.isOpen = true;
+    // this.bot.on('open', async () => {
+    this.isOpen = true;
 
-      // give up if bot is not available
-      if (!this.bot) {
-        return;
-      }
+    // give up if bot is not available
+    if (!this.bot) {
+      return;
+    }
 
-      // fetch list of channels and groups
-      const { channels } = await this.bot.getChannels();
-      const { groups } = await this.bot.getGroups();
-
-      // save list of channels including groups
-      this.channels = [...channels, ...groups];
-    });
+    // fetch list of channels and groups
+    // const { channels } = await this.bot.getChannels();
+    // const { groups } = await this.bot.getGroups();
+    // this.bot.channels.list().then()
+    // save list of channels including groups
+    // this.channels = [...channels, ...groups];
+    // });
 
     // listen for close event
-    this.bot.on("close", () => {
-      this.isOpen = false;
-    });
+    // this.bot.on("close", () => {
+    //   this.isOpen = false;
+    // });
 
     // register built-in message handlers
     this.addMessageHandler(new HelpMessageHandler());
 
     // listen for incoming messages
-    this.bot.on("message", async (message) => this.onMessage(message));
+    // this.bot.on("message", async (message) => this.onMessage(message));
   }
 
   public get isConnected() {
@@ -215,21 +211,21 @@ export default class SlackLogger extends Transform {
     return this.messageHandlers;
   }
 
-  public getChannelById(id: string): SlackBotChannel | undefined {
-    if (!this.channels) {
-      return undefined;
-    }
+  // public getChannelById(id: string): SlackBotChannel | undefined {
+  //   if (!this.channels) {
+  //     return undefined;
+  //   }
 
-    return this.channels.find((channel) => channel.id === id);
-  }
+  //   return this.channels.find((channel) => channel.id === id);
+  // }
 
-  public getChannelByName(name: string): SlackBotChannel | undefined {
-    if (!this.channels) {
-      return undefined;
-    }
+  // public getChannelByName(name: string): SlackBotChannel | undefined {
+  //   if (!this.channels) {
+  //     return undefined;
+  //   }
 
-    return this.channels.find((channel) => channel.name === name);
-  }
+  //   return this.channels.find((channel) => channel.name === name);
+  // }
 
   public sendMessage(userInfo: MessageInfo) {
     // just ignore messages if no bot was created
@@ -277,10 +273,10 @@ export default class SlackLogger extends Transform {
     const userDataYaml =
       Object.keys(info.userData).length > 0
         ? yaml.safeDump(info.userData, {
-            skipInvalid: true,
-            noRefs: true,
-            noCompatMode: true,
-          })
+          skipInvalid: true,
+          noRefs: true,
+          noCompatMode: true,
+        })
         : "";
 
     // set text to formatted yaml
@@ -296,6 +292,8 @@ export default class SlackLogger extends Transform {
 
     // post the message
     this.post("", {
+      channel: this.options.channel,
+      text: info.text,
       attachments: [
         {
           fallback: info.text,
@@ -303,8 +301,8 @@ export default class SlackLogger extends Transform {
           author_name: info.component ? info.component : undefined,
           title: info.text,
           text,
-          image_url: "http://my-website.com/path/to/image.jpg",
-          thumb_url: "http://example.com/path/to/thumb.png",
+          // image_url: "http://my-website.com/path/to/image.jpg",
+          // thumb_url: "http://example.com/path/to/thumb.png",
           footer,
           footer_icon: messageIconUrl,
         },
@@ -387,7 +385,7 @@ export default class SlackLogger extends Transform {
     return true;
   }
 
-  public post(message: string, options: PostMessageParams = {}) {
+  public post(message: string, options: ChatPostMessageArguments = { channel: this.options.channel, text: '' }) {
     // just ignore post requests if no bot was created
     if (!this.bot) {
       return;
@@ -395,7 +393,7 @@ export default class SlackLogger extends Transform {
 
     // attempt to post the message
     try {
-      this.bot.postTo(this.options.channel, message, {
+      this.bot.chat.postMessage({
         username: this.options.name,
         icon_url: this.options.iconUrl,
         ...options,
@@ -405,40 +403,40 @@ export default class SlackLogger extends Transform {
     }
   }
 
-  public async onMessage(message: SlackBotMessage) {
-    // only handle normal messages
-    if (message.type !== "message" || typeof message.text !== "string") {
-      return;
-    }
+  // public async onMessage(message: SlackBotMessage) {
+  //   // only handle normal messages
+  //   if (message.type !== "message" || typeof message.text !== "string") {
+  //     return;
+  //   }
 
-    // attempt to get channel info by name
-    const channel = this.getChannelById(message.channel);
+  //   // attempt to get channel info by name
+  //   const channel = this.getChannelById(message.channel);
 
-    // ignore message if no such channel was found
-    if (!channel) {
-      return;
-    }
+  //   // ignore message if no such channel was found
+  //   if (!channel) {
+  //     return;
+  //   }
 
-    // ignore messages from wrong channels
-    if (channel.name !== this.options.channel) {
-      return;
-    }
+  //   // ignore messages from wrong channels
+  //   if (channel.name !== this.options.channel) {
+  //     return;
+  //   }
 
-    // split the message into tokens and use the first word as the name of the command
-    const tokens = message.text.split(" ");
-    const name = tokens[0];
+  //   // split the message into tokens and use the first word as the name of the command
+  //   const tokens = message.text.split(" ");
+  //   const name = tokens[0];
 
-    // attempt to find the message handler
-    const messageHandler = this.getMessageHandlerByName(name);
+  //   // attempt to find the message handler
+  //   const messageHandler = this.getMessageHandlerByName(name);
 
-    // ignore unsupported messages
-    if (!messageHandler) {
-      return;
-    }
+  //   // ignore unsupported messages
+  //   if (!messageHandler) {
+  //     return;
+  //   }
 
-    // handle supported messages
-    await messageHandler.handleMessage(message, this);
-  }
+  //   // handle supported messages
+  //   await messageHandler.handleMessage(message, this);
+  // }
 
   protected formatSource(basePath: string, source: string) {
     return path.relative(basePath, source).replace(/\\/g, "/");
