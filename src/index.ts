@@ -266,7 +266,7 @@ export default class SlackLogger extends Transform {
 
     // add name if set
     if (this.options.name) {
-      footer += ` • v${this.options.name}`;
+      footer += ` • from: ${this.options.name}`;
     }
 
     // add hostname if set

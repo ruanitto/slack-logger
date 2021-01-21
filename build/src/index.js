@@ -202,7 +202,7 @@ var SlackLogger = /** @class */ (function (_super) {
         }
         // add name if set
         if (this.options.name) {
-            footer += " \u2022 v" + this.options.name;
+            footer += " \u2022 from: " + this.options.name;
         }
         // add hostname if set
         if (typeof info.hostname === "string" && info.hostname.length > 0) {
